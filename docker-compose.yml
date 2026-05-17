@@ -1,0 +1,90 @@
+# =======================================================================
+# DocuVault Final — Docker Compose
+#
+# Complete the TODO sections so that `docker-compose up` starts the
+# full 3-node cluster with no additional setup.
+#
+# Architecture:
+#   Client → coordinator (port 8080) → storage-a (port 9001)
+#                                     → storage-b (port 9002)
+# =======================================================================
+
+version: "3.8"
+
+services:
+
+  # --- TODO 1: Coordinator service ---
+  # Requirements:
+  #   - Build from Dockerfile.coordinator
+  #   - Expose port 8080 to the host
+  #   - Set environment variables:
+  #       DOCUVAULT_SECRET:      a shared secret string (you choose)
+  #       LOCK_TIMEOUT_SECONDS:  5
+  #       STORAGE_A_HOST:        storage-a
+  #       STORAGE_A_PORT:        9001
+  #       STORAGE_B_HOST:        storage-b
+  #       STORAGE_B_PORT:        9002
+  #       USERS_FILE:            /data/users.txt
+  #   - Connect to the docuvault-net network
+  #   - Depend on storage-a and storage-b (depends_on)
+  coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile.coordinator
+    ports:
+      - "8080:8080"
+    environment:
+      DOCUVAULT_SECRET: "docuvault-secret"
+      LOCK_TIMEOUT_SECONDS: "5"
+      STORAGE_A_HOST: "storage-a"
+      STORAGE_A_PORT: "9001"
+      STORAGE_B_HOST: "storage-b"
+      STORAGE_B_PORT: "9002"
+      USERS_FILE: "/data/users.txt"
+    networks:
+      - docuvault-net
+    depends_on:
+      - storage-a
+      - storage-b
+
+  # --- TODO 2: Storage Node A ---
+  # Requirements:
+  #   - Build from Dockerfile.storage
+  #   - Start with:  ./docuvault_storage --port 9001
+  #     (use the `command:` field to override the default CMD)
+  #   - Set environment variable:
+  #       DOCUVAULT_SECRET:  same value as coordinator
+  #   - Connect to the docuvault-net network
+  #   - Do NOT expose port 9001 to the host — it's internal only
+  storage-a:
+    build:
+      context: .
+      dockerfile: Dockerfile.storage
+    command: ["./docuvault_storage", "--port", "9001", "--data", "/data/store"]
+    environment:
+      DOCUVAULT_SECRET: "docuvault-secret"
+    networks:
+      - docuvault-net
+    volumes:
+      - ./data/storage-a:/data
+
+  # --- TODO 3: Storage Node B ---
+  # Requirements:
+  #   - Same as Storage Node A but with port 9002
+  storage-b:
+    build:
+      context: .
+      dockerfile: Dockerfile.storage
+    command: ["./docuvault_storage", "--port", "9002", "--data", "/data/store"]
+    environment:
+      DOCUVAULT_SECRET: "docuvault-secret"
+    networks:
+      - docuvault-net
+    volumes:
+      - ./data/storage-b:/data
+
+# --- TODO 4: Define the shared network ---
+# Create a bridge network named docuvault-net.
+networks:
+  docuvault-net:
+    driver: bridge

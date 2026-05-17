@@ -1,0 +1,53 @@
+# =======================================================================
+# DocuVault Final — Storage Node Dockerfile
+#
+# The storage node reuses your Checkpoint 1 FileSystem implementation
+# but runs a new entry point (storage_node.cpp) that accepts binary-
+# framed messages from the Coordinator.
+#
+# Complete the TODO sections.
+# =======================================================================
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- TODO 1: Install build dependencies ---
+# Install compiler, OpenSSL headers, and other essentials.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+	 build-essential \
+	 g++ \
+	 libssl-dev \
+	 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+
+# --- Working directory ---
+WORKDIR /app
+
+# --- Copy source code ---
+COPY src/ src/
+
+# --- TODO 2: Compile the storage node ---
+# Compile the storage node binary. If additional source files
+# (e.g. filesystem implementation) are present, adjust the
+# command to include them. Linking against OpenSSL and pthreads.
+RUN g++ -std=c++17 -O2 \
+	src/storage_node.cpp src/storage_client.cpp src/fs.cpp \
+	-pthread -lssl -lcrypto -o docuvault_storage
+
+
+# --- TODO 3: Create the data directory for block storage ---
+# Create a default data directory that the FileSystem implementation
+# will use at runtime. This directory is mounted as /data in compose.
+RUN mkdir -p /data/store && chmod 700 /data/store
+
+
+# --- TODO 4: Expose the storage node's port ---
+# Expose the default internal port; compose will override as needed.
+EXPOSE 9001
+
+
+# --- Start the storage node (default port, overridden by compose) ---
+CMD ["./docuvault_storage"]

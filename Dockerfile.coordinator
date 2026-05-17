@@ -1,0 +1,45 @@
+# =======================================================================
+# DocuVault Final — Coordinator Dockerfile
+#
+# Complete the TODO sections.  When finished:
+#   docker build -f Dockerfile.coordinator -t docuvault-coordinator .
+# =======================================================================
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- TODO 1: Install build dependencies ---
+# Install compiler, OpenSSL headers, and other essentials.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+	 build-essential \
+	 g++ \
+	 libssl-dev \
+	 ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+
+# --- Working directory ---
+WORKDIR /app
+
+# --- Copy source code ---
+COPY src/ src/
+COPY data/ /data/
+
+# --- TODO 2: Compile the coordinator ---
+# Compile the coordinator binary. If additional source files
+# (e.g. auth.cpp) are present, include them. Linking against
+# OpenSSL and pthreads.
+RUN g++ -std=c++17 -O2 \
+	src/coordinator.cpp src/storage_client.cpp src/auth.cpp \
+	-pthread -lssl -lcrypto -o docuvault_coordinator
+
+
+# --- TODO 3: Expose the coordinator's client-facing port ---
+# Coordinator listens for client requests on port 8080 by default.
+EXPOSE 8080
+
+
+# --- Start the coordinator ---
+CMD ["./docuvault_coordinator"]
